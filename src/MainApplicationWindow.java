@@ -2,12 +2,12 @@ import javax.swing.*;
 
 public class MainApplicationWindow extends JFrame {
 
-    private static final int windowSize = 800;
+    private static final int windowSize = 750;
 
     MainApplicationWindow(String name) {
         super(name);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setSize(windowSize, windowSize);
+        this.setSize(windowSize + 14, windowSize + 37);
         this.setLayout(null);
         JLayeredPane layeredPane = new JLayeredPane();
         this.setContentPane(layeredPane);
@@ -22,4 +22,14 @@ public class MainApplicationWindow extends JFrame {
     public Point getMiddlePoint() {
         return new Point((double) windowSize / 2, (double) windowSize / 2);
     }
+
+    /*@Override
+    public int getHeight() {
+        throw (new UnsupportedOperationException("Use getWindowSize() instead."));
+    }
+
+    @Override
+    public int getWidth() {
+        throw (new UnsupportedOperationException("Use getWindowSize() instead."));
+    }*/
 }
