@@ -211,6 +211,13 @@ public class Entrance {
         public int getId() {
             return id;
         }
+        public int calculateLaneHotnesIndex(){
+            int sum = 0;
+            for (Car car : waitingCars) {
+                sum += car.waitingTime;
+            }
+            return sum;
+        }
     }
 
     public static class Path {

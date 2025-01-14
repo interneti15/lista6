@@ -11,10 +11,10 @@ public class Car extends Thread {
     Intersection intersection;
     MainApplicationWindow mainApplicationWindow;
     CarHandler carHandler;
-    private int startingEntranceID;
-    private int endEntranceID;
-
     private STATUS status = null;
+    private Entrance startingEntrance;
+    private Entrance.Lane choosenLane;
+    private Entrance.Path choosenPath;
 
 
     Car(Intersection intersection, MainApplicationWindow mainApplicationWindow) {
@@ -46,27 +46,27 @@ public class Car extends Thread {
     }
 
     private void findNewPath() {
-        this.startingEntranceID = new Random().nextInt(intersection.getEntrances().size());
-        this.endEntranceID = (startingEntranceID + new Random().nextInt(intersection.getEntrances().size() - 1)) % intersection.getEntrances().size();
+        int startingEntranceID = new Random().nextInt(intersection.getEntrances().size());
+        int endEntranceID = (startingEntranceID + new Random().nextInt(intersection.getEntrances().size() - 1)) % intersection.getEntrances().size();
 
-        int laneID = findCorrectPathID(intersection, startingEntranceID, endEntranceID);
-        if (laneID == -1){
-            findNewPath();
-        }
+        startingEntrance = intersection.getEntrances().get(startingEntranceID);
+
+        findCorrectPath(intersection, startingEntranceID, endEntranceID);
 
         status = STATUS.WAITING;
     }
 
-    private static int findCorrectPathID(Intersection intersection, int startingEntranceID, int endEntranceID) {
+    private void findCorrectPath(Intersection intersection, int startingEntranceID, int endEntranceID) {
         ArrayList<Entrance.Lane> availableLanes = intersection.getEntrances().get(startingEntranceID).getLanes();
         for (Entrance.Lane lane : availableLanes) {
             for (Entrance.Path path : lane.getPaths()) {
                 if (path.getEndEntranceID() == endEntranceID) {
-                    return lane.getId();
+                    this.choosenLane = lane;
+                    this.choosenPath = path;
                 }
             }
         }
-        return -1;
+        findNewPath();
     }
 
     static class CarHandler extends JPanel {
@@ -77,6 +77,8 @@ public class Car extends Thread {
             this.setOpaque(true);
             car.mainApplicationWindow.add(this);
         }
+
+
     }
 
     enum STATUS {
