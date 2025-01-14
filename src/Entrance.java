@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class Entrance {
     private static int ROAD_LANES = 5;
@@ -35,6 +36,11 @@ public class Entrance {
         //System.out.println(degreeFacingMiddle);
         this.handler = new EntranceHandler(mainApplicationWindow);
     }
+
+    public int getId() {
+        return id;
+    }
+
 
     private void createExitPathPoints() {
         for (int i = 0; i < exitPoints.size(); i++) {
@@ -150,6 +156,7 @@ public class Entrance {
         private ArrayList<Car> waitingCars = new ArrayList<Car>();
         private final ArrayList<Path> paths = new ArrayList<>();
         private final ArrayList<Point> queuePoints = new ArrayList<>();
+        private boolean isGreenLight = false;
 
         public Lane(int id, Point position, int numberOfPaths, double directionAngle, Entrance entrance) {
             this.id = id;
@@ -171,6 +178,7 @@ public class Entrance {
                 queuePoints.add(new Point(currentPoint));
                 currentPoint = new Point(currentPoint.getX() + step.getX() * SCALE, currentPoint.getY() + step.getY() * SCALE);
             }
+            Collections.reverse(queuePoints);
         }
 
         /**
@@ -189,9 +197,9 @@ public class Entrance {
                 //double offset = Math.sqrt(distance) * (distance / 60) * ((-distance)/143 + (243d/71d));
                 double offset = distance * Math.sqrt(2) / 3;
                 //System.out.println(distance);
-                System.out.println("            Bulding path, from: " + this.entrance.id + ", to: " + connectedToEndID + ", exit id: " + (ROAD_LANES - 1 - this.id));
+                System.out.println("            Bulding path #" + this.getId() + ", from: " + this.entrance.id + ", to: " + connectedToEndID + ", exit id: " + (ROAD_LANES - 1 - this.id));
                 ArrayList<Point> curvePoints = CurveGenerator.generateCurveAndPoints(this.position.getX(), this.position.getY(), this.directionAngle, endPoint.getX(), endPoint.getY(), endEntrance.degreeFacingMiddle, SAMPLING_RATE, offset);
-                this.paths.add(new Path(curvePoints, this.entrance.id, connectedToEndID, (ROAD_LANES - 1 - this.id), this));
+                this.paths.add(new Path(curvePoints, entrance, this, endEntrance, (ROAD_LANES - 1 - this.id)));
             }
             //System.out.println(this.entrance.id + " : " + this.id + " : " + connectedToEndID);
         }
@@ -218,33 +226,48 @@ public class Entrance {
             }
             return sum;
         }
+        public boolean isGreenLight() {
+            return isGreenLight;
+        }
+
+        public void setGreenLight(boolean greenLight) {
+            isGreenLight = greenLight;
+        }
     }
 
     public static class Path {
         private ArrayList<Point> intersectionPath = new ArrayList<>();
-        private final int startEntranceID;
-        private final int endEntranceID;
-        private final Lane startingLane;
+        private final Entrance startEntrance;
+        private final Entrance endEntrance;
+        private final Lane startLane;
         private final int endExitID;
 
-        public Path(ArrayList<Point> intersectionPath, int startEntranceID, int endEntranceID, int endExitID, Lane startingLane) {
+        public Path(ArrayList<Point> intersectionPath, Entrance startEntrance, Lane startLane, Entrance endEntrance, int endExitID) {
             this.intersectionPath = intersectionPath;
-            this.startEntranceID = startEntranceID;
-            this.endEntranceID = endEntranceID;
+            this.startEntrance = startEntrance;
+            this.endEntrance = endEntrance;
             this.endExitID = endExitID;
-            this.startingLane = startingLane;
+            this.startLane = startLane;
+        }
+
+        public Lane getStartLane() {
+            return startLane;
         }
 
         public ArrayList<Point> getIntersectionPath() {
             return intersectionPath;
         }
 
-        public int getStartEntranceID() {
-            return startEntranceID;
+        public Entrance getEndEntrance() {
+            return endEntrance;
         }
 
-        public int getEndEntranceID() {
-            return endEntranceID;
+        public int getEndExitID() {
+            return endExitID;
+        }
+
+        public Entrance getStartEntrance() {
+            return startEntrance;
         }
     }
 

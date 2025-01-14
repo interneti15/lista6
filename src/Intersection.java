@@ -7,7 +7,8 @@ public class Intersection extends Thread {
     private IntersectionHandler intersectionJPanelHandler;
     private int entrancesNumber;
     private MainApplicationWindow mainApplicationWindow;
-
+    private int totalCarsOnIntersectionThisTurn = 0;
+    private final int intersectionTime = 5000;
 
     Intersection(int entrances, MainApplicationWindow mainApplicationWindow) {
         this.entrancesNumber = entrances;
@@ -17,6 +18,26 @@ public class Intersection extends Thread {
         this.intersectionJPanelHandler = new IntersectionHandler(entrances, mainApplicationWindow, this);
     }
 
+    @Override
+    public void run() {
+        while (true) {
+
+            manageGreenLights();
+
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void manageGreenLights() {
+    }
+
+    public void increaseCarsOnIntersection(){
+        totalCarsOnIntersectionThisTurn++;
+    }
     public IntersectionHandler getIntersectionJPanelHandler() {
         return intersectionJPanelHandler;
     }
@@ -70,6 +91,10 @@ public class Intersection extends Thread {
         }
     }
 
+    public MainApplicationWindow getMainApplicationWindow() {
+        return mainApplicationWindow;
+    }
+
     static class IntersectionHandler extends JPanel {
         static final double intersectionSizeRatio = 0.85;
         private Intersection intersection;
@@ -112,7 +137,6 @@ public class Intersection extends Thread {
                     graphics2D.drawLine((int) start.getX(), (int) start.getY(), (int) end.getX(), (int) end.getY());
                 }
             }
-
             debugPaths(graphics2D);
         }
 
@@ -121,13 +145,13 @@ public class Intersection extends Thread {
                 Entrance entrance = this.intersection.entrances.get(i);
 
                 graphics2D.setColor(Color.YELLOW);
-                for (Point point : entrance.getEntrancePoints()){
+                for (Point point : entrance.getEntrancePoints()) {
                     graphics2D.fillOval(point.getXFloored() - 5, point.getYFloored() - 5, 10, 10);
                 }
                 graphics2D.setColor(Color.black);
 
-                for (ArrayList<Point> exitPath : entrance.getExitPathsPoints()){
-                    for (Point point : exitPath){
+                for (ArrayList<Point> exitPath : entrance.getExitPathsPoints()) {
+                    for (Point point : exitPath) {
                         graphics2D.fillOval(point.getXFloored(), point.getYFloored(), 2, 2);
                     }
                 }
@@ -144,18 +168,27 @@ public class Intersection extends Thread {
                     for (int k = 0; k < lane.getPaths().size(); k++) {
                         Entrance.Path path = lane.getPaths().get(k);
                         for (int l = 1; l < path.getIntersectionPath().size(); l++) {
-                            Point prevoiusPoint = path.getIntersectionPath().get(l-1);
+                            Point prevoiusPoint = path.getIntersectionPath().get(l - 1);
                             Point point = path.getIntersectionPath().get(l);
                             graphics2D.drawLine(point.getXFloored(), point.getYFloored(), prevoiusPoint.getXFloored(), prevoiusPoint.getYFloored());
                         }
                     }
+                    graphics2D.setColor(Color.white);
+                    graphics2D.drawString(String.valueOf(lane.getId()), lane.getQueuePoints().getLast().getXFloored(), lane.getQueuePoints().getLast().getYFloored());
+                    graphics2D.setColor(Color.black);
                 }
+
+                graphics2D.setColor(Color.white);
+                for (int j = 0; j < entrance.getExitPathsPoints().size(); j++) {
+                    graphics2D.drawString(String.valueOf(j), entrance.getExitPathsPoints().get(j).getFirst().getXFloored(), entrance.getExitPathsPoints().get(j).getFirst().getYFloored());
+                }
+                int middleX = (entrance.getStart().getXFloored() + entrance.getEnd().getXFloored()) / 2;
+                int middleY = (entrance.getStart().getYFloored() + entrance.getEnd().getYFloored()) / 2;
+
+                graphics2D.drawString(String.valueOf(entrance.getId()), middleX, middleY);
+                graphics2D.setColor(Color.black);
             }
         }
-    }
-
-    public MainApplicationWindow getMainApplicationWindow() {
-        return mainApplicationWindow;
     }
 }
 

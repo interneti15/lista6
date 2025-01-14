@@ -35,7 +35,10 @@ public class Car extends Thread {
             switch (status) {
                 case WAITING:
                     waitingTime++;
-                    break;
+                    //System out path object
+                    System.out.println("Car " + id + " at entrance: " + choosenPath.getStartEntrance().getId() + " in lane: " + choosenPath.getStartLane().getId() + " destination at: " + choosenPath.getEndEntrance().getId() + " exit number: " + choosenPath.getEndExitID());
+                    return;
+
                 case MOVING:
                     waitingTime = 0;
                     break;
@@ -49,6 +52,9 @@ public class Car extends Thread {
         int startingEntranceID = new Random().nextInt(intersection.getEntrances().size());
         int endEntranceID = (startingEntranceID + new Random().nextInt(intersection.getEntrances().size() - 1)) % intersection.getEntrances().size();
 
+        System.out.println("start: " + startingEntranceID);
+        System.out.println("end: " + endEntranceID);
+
         startingEntrance = intersection.getEntrances().get(startingEntranceID);
 
         findCorrectPath(intersection, startingEntranceID, endEntranceID);
@@ -60,9 +66,10 @@ public class Car extends Thread {
         ArrayList<Entrance.Lane> availableLanes = intersection.getEntrances().get(startingEntranceID).getLanes();
         for (Entrance.Lane lane : availableLanes) {
             for (Entrance.Path path : lane.getPaths()) {
-                if (path.getEndEntranceID() == endEntranceID) {
+                if (path.getEndEntrance().getId() == endEntranceID) {
                     this.choosenLane = lane;
                     this.choosenPath = path;
+                    return;
                 }
             }
         }
