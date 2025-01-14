@@ -207,20 +207,24 @@ public class Entrance {
         public ArrayList<Point> getQueuePoints() {
             return queuePoints;
         }
+
+        public int getId() {
+            return id;
+        }
     }
 
     public static class Path {
         private ArrayList<Point> intersectionPath = new ArrayList<>();
-        private final int startID;
-        private final int endID;
+        private final int startEntranceID;
+        private final int endEntranceID;
         private final Lane startingLane;
-        private final int endPathID;
+        private final int endExitID;
 
-        public Path(ArrayList<Point> intersectionPath, int startID, int endID, int endPathID, Lane startingLane) {
+        public Path(ArrayList<Point> intersectionPath, int startEntranceID, int endEntranceID, int endExitID, Lane startingLane) {
             this.intersectionPath = intersectionPath;
-            this.startID = startID;
-            this.endID = endID;
-            this.endPathID = endPathID;
+            this.startEntranceID = startEntranceID;
+            this.endEntranceID = endEntranceID;
+            this.endExitID = endExitID;
             this.startingLane = startingLane;
         }
 
@@ -228,12 +232,12 @@ public class Entrance {
             return intersectionPath;
         }
 
-        public int getStartID() {
-            return startID;
+        public int getStartEntranceID() {
+            return startEntranceID;
         }
 
-        public int getEndID() {
-            return endID;
+        public int getEndEntranceID() {
+            return endEntranceID;
         }
     }
 

@@ -1,18 +1,30 @@
 import javax.swing.*;
+import java.util.concurrent.CountDownLatch;
 
 public class JObjectsHandler {
     private MainApplicationWindow ApplicationMainJFrame;
 
     JObjectsHandler() {
         System.out.println("JObjectsHandler constructor started");
-
+        CountDownLatch latch = new CountDownLatch(1);
         SwingUtilities.invokeLater(() -> {
-            System.out.println("Creating MainApplicationWindow");
-            this.ApplicationMainJFrame = new MainApplicationWindow("Cars Simulation");
+            try {
+                System.out.println("Creating MainApplicationWindow");
+                this.ApplicationMainJFrame = new MainApplicationWindow("Cars Simulation");
 
-            System.out.println("Creating Intersection Object");
-            Main.setIntersection(new Intersection(askUserForNumber("Number of entrances", "Enter the number of entrances!"), ApplicationMainJFrame));
+                System.out.println("Creating Intersection Object");
+                Main.setIntersection(new Intersection(askUserForNumber("Number of entrances", "Enter the number of entrances!"), ApplicationMainJFrame));
+            } finally {
+                latch.countDown();
+            }
         });
+        
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Interrupted while waiting for GUI initialization");
+        }
 
         System.out.println("JObjectsHandler constructor has finished");
     }
