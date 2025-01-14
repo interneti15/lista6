@@ -8,6 +8,7 @@ public class MainApplicationWindow extends JFrame {
         super(name);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setSize(windowSize + 14, windowSize + 37);
+        //this.setSize(windowSize, windowSize);
         this.setLayout(null);
         JLayeredPane layeredPane = new JLayeredPane();
         this.setContentPane(layeredPane);

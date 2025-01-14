@@ -27,4 +27,17 @@ public class Point {
         double dy = this.y - other.y;
         return Math.sqrt(dx * dx + dy * dy);
     }
+
+    public int getXFloored() {
+        return (int) x;
+    }
+    public int getYFloored() {
+        return (int) y;
+    }
+
+    @Override
+    public String toString() {
+        return "Point{x=" + x + ", y=" + y + "}";
+    }
+
 }

@@ -10,11 +10,11 @@ public class Main {
         jObjectsHandler = new JObjectsHandler();
     }
 
-    public static void setIntersection(Intersection intersection) {
-        Main.intersection = intersection;
-    }
-
     public static Intersection getIntersection() {
         return intersection;
+    }
+
+    public static void setIntersection(Intersection intersection) {
+        Main.intersection = intersection;
     }
 }

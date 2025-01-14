@@ -13,6 +13,8 @@ public class JObjectsHandler {
             System.out.println("Creating Intersection Object");
             Main.setIntersection(new Intersection(askUserForNumber("Number of entrances", "Enter the number of entrances!"), ApplicationMainJFrame));
         });
+
+        System.out.println("JObjectsHandler constructor has finished");
     }
 
     public MainApplicationWindow getApplicationMainJFrame() {
