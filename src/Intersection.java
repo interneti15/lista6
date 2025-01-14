@@ -3,10 +3,10 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class Intersection extends Thread {
-    ArrayList<Entrance> entrances = new ArrayList<>();
-    IntersectionHandler intersectionJPanelHandler;
-    int entrancesNumber;
-    MainApplicationWindow mainApplicationWindow;
+    private ArrayList<Entrance> entrances = new ArrayList<>();
+    private IntersectionHandler intersectionJPanelHandler;
+    private int entrancesNumber;
+    private MainApplicationWindow mainApplicationWindow;
 
 
     Intersection(int entrances, MainApplicationWindow mainApplicationWindow) {
@@ -113,6 +113,10 @@ public class Intersection extends Thread {
                 }
             }
 
+            debugPaths(graphics2D);
+        }
+
+        private void debugPaths(Graphics2D graphics2D) {
             for (int i = 0; i < this.intersection.entrancesNumber; i++) {
                 Entrance entrance = this.intersection.entrances.get(i);
 
@@ -122,19 +126,36 @@ public class Intersection extends Thread {
                 }
                 graphics2D.setColor(Color.black);
 
+                for (ArrayList<Point> exitPath : entrance.getExitPathsPoints()){
+                    for (Point point : exitPath){
+                        graphics2D.fillOval(point.getXFloored(), point.getYFloored(), 2, 2);
+                    }
+                }
+
                 for (int j = 0; j < entrance.getLanes().size(); j++) {
                     Entrance.Lane lane = entrance.getLanes().get(j);
-                    for (int k = 0; k < lane.paths.size(); k++) {
-                        Entrance.Path path = lane.paths.get(k);
-                        for (int l = 1; l < path.intersectionPath.size(); l++) {
-                            Point prevoiusPoint = path.intersectionPath.get(l-1);
-                            Point point = path.intersectionPath.get(l);
+
+                    for (int k = 0; k < lane.getQueuePoints().size(); k++) {
+                        Point point = lane.getQueuePoints().get(k);
+                        graphics2D.fillOval(point.getXFloored(), point.getYFloored(), 2, 2);
+                    }
+
+
+                    for (int k = 0; k < lane.getPaths().size(); k++) {
+                        Entrance.Path path = lane.getPaths().get(k);
+                        for (int l = 1; l < path.getIntersectionPath().size(); l++) {
+                            Point prevoiusPoint = path.getIntersectionPath().get(l-1);
+                            Point point = path.getIntersectionPath().get(l);
                             graphics2D.drawLine(point.getXFloored(), point.getYFloored(), prevoiusPoint.getXFloored(), prevoiusPoint.getYFloored());
                         }
                     }
                 }
             }
         }
+    }
+
+    public MainApplicationWindow getMainApplicationWindow() {
+        return mainApplicationWindow;
     }
 }
 

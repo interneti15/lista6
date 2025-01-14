@@ -14,6 +14,7 @@ public class Entrance {
     private ArrayList<Point> entrancePoints;
     private Intersection intersection;
     private ArrayList<Point> exitPoints;
+    private final ArrayList<ArrayList<Point>> exitPathsPoints = new ArrayList<>();
 
     Entrance(Point start, Point end, int id, int numberOfEntrances, MainApplicationWindow mainApplicationWindow, Intersection intersection) {
         this.start = start;
@@ -26,11 +27,31 @@ public class Entrance {
         checkValidity();
         calculateDegreeFacingMiddle();
         createSpecialPoints();
+        createExitPathPoints();
         createLanes();
+
 
         //System.out.println("Entrance: " + start + " End: " + end);
         //System.out.println(degreeFacingMiddle);
         this.handler = new EntranceHandler(mainApplicationWindow);
+    }
+
+    private void createExitPathPoints() {
+        for (int i = 0; i < exitPoints.size(); i++) {
+            ArrayList<Point> temporaryExitPath = new ArrayList<>();
+            double SCALE = 0.1;
+            Point step = new Point(Math.cos(this.degreeFacingMiddle + Math.PI), (-1)*Math.sin(this.degreeFacingMiddle + Math.PI));
+            Point currentPoint = new Point(this.exitPoints.get(i));
+            while (currentPoint.getX() <= this.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getY() <= this.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getX() >= 0 && currentPoint.getY() >= 0) {
+                temporaryExitPath.add(new Point(currentPoint));
+                currentPoint = new Point(currentPoint.getX() + step.getX() * SCALE, currentPoint.getY() + step.getY() * SCALE);
+            }
+            this.exitPathsPoints.add(temporaryExitPath);
+        }
+    }
+
+    public ArrayList<ArrayList<Point>> getExitPathsPoints() {
+        return exitPathsPoints;
     }
 
     private void checkValidity() {
@@ -121,14 +142,14 @@ public class Entrance {
     }
 
     public static class Lane {
-        int id;
-        Point position;
-        int numberOfPaths;
-        double directionAngle;
-        Entrance entrance;
-        ArrayList<Car> waitingCars = new ArrayList<Car>();
-        ArrayList<Path> paths = new ArrayList<>();
-
+        private final int id;
+        private final Point position;
+        private final int numberOfPaths;
+        private final double directionAngle;
+        private final Entrance entrance;
+        private ArrayList<Car> waitingCars = new ArrayList<Car>();
+        private final ArrayList<Path> paths = new ArrayList<>();
+        private final ArrayList<Point> queuePoints = new ArrayList<>();
 
         public Lane(int id, Point position, int numberOfPaths, double directionAngle, Entrance entrance) {
             this.id = id;
@@ -136,6 +157,20 @@ public class Entrance {
             this.numberOfPaths = numberOfPaths;
             this.directionAngle = directionAngle;
             this.entrance = entrance;
+
+            buildQueuePoints();
+            System.out.println("1");
+        }
+
+        private void buildQueuePoints() {
+
+            double SCALE = 0.1;
+            Point step = new Point(Math.cos(this.directionAngle + Math.PI), (-1)*Math.sin(this.directionAngle + Math.PI));
+            Point currentPoint = new Point(this.position);
+            while (currentPoint.getX() <= this.entrance.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getY() <= this.entrance.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getX() >= 0 && currentPoint.getY() >= 0) {
+                queuePoints.add(new Point(currentPoint));
+                currentPoint = new Point(currentPoint.getX() + step.getX() * SCALE, currentPoint.getY() + step.getY() * SCALE);
+            }
         }
 
         /**
@@ -154,25 +189,53 @@ public class Entrance {
                 //double offset = Math.sqrt(distance) * (distance / 60) * ((-distance)/143 + (243d/71d));
                 double offset = distance * Math.sqrt(2) / 3;
                 //System.out.println(distance);
-                System.out.println("            Bulding path " + this.entrance.id + "-" + connectedToEndID + "-" + (ROAD_LANES - 1 - this.id));
-                this.paths.add(new Path(CurveGenerator.generateCurveAndPoints(this.position.getX(), this.position.getY(), this.directionAngle, endPoint.getX(), endPoint.getY(), endEntrance.degreeFacingMiddle, SAMPLING_RATE, offset), this.entrance.id,connectedToEndID));
+                System.out.println("            Bulding path, from: " + this.entrance.id + ", to: " + connectedToEndID + ", exit id: " + (ROAD_LANES - 1 - this.id));
+                ArrayList<Point> curvePoints = CurveGenerator.generateCurveAndPoints(this.position.getX(), this.position.getY(), this.directionAngle, endPoint.getX(), endPoint.getY(), endEntrance.degreeFacingMiddle, SAMPLING_RATE, offset);
+                this.paths.add(new Path(curvePoints, this.entrance.id, connectedToEndID, (ROAD_LANES - 1 - this.id), this));
             }
             //System.out.println(this.entrance.id + " : " + this.id + " : " + connectedToEndID);
+        }
+
+        public ArrayList<Path> getPaths() {
+            return paths;
+        }
+
+        public void addCarToQueue(Car car) {
+            this.waitingCars.add(car);
+        }
+
+        public ArrayList<Point> getQueuePoints() {
+            return queuePoints;
         }
     }
 
     public static class Path {
-        ArrayList<Point> intersectionPath = new ArrayList<>();
-        int startID;
-        int endID;
-        public Path(ArrayList<Point> intersectionPath) {
-            this.intersectionPath = intersectionPath;
-        }
+        private ArrayList<Point> intersectionPath = new ArrayList<>();
+        private final int startID;
+        private final int endID;
+        private final Lane startingLane;
+        private final int endPathID;
 
-        public Path(ArrayList<Point> intersectionPath, int startID, int endID) {
+        public Path(ArrayList<Point> intersectionPath, int startID, int endID, int endPathID, Lane startingLane) {
             this.intersectionPath = intersectionPath;
             this.startID = startID;
             this.endID = endID;
+            this.endPathID = endPathID;
+            this.startingLane = startingLane;
+        }
+
+        public ArrayList<Point> getIntersectionPath() {
+            return intersectionPath;
+        }
+
+        public int getStartID() {
+            return startID;
+        }
+
+        public int getEndID() {
+            return endID;
         }
     }
+
+
 }
