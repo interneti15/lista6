@@ -45,7 +45,7 @@ public class Entrance {
     private void createExitPathPoints() {
         for (int i = 0; i < exitPoints.size(); i++) {
             ArrayList<Point> temporaryExitPath = new ArrayList<>();
-            double SCALE = 0.1;
+            double SCALE = 2;
             Point step = new Point(Math.cos(this.degreeFacingMiddle + Math.PI), (-1)*Math.sin(this.degreeFacingMiddle + Math.PI));
             Point currentPoint = new Point(this.exitPoints.get(i));
             while (currentPoint.getX() <= this.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getY() <= this.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getX() >= 0 && currentPoint.getY() >= 0) {
@@ -130,10 +130,6 @@ public class Entrance {
 
     void drawCurveOnParrent() {
 
-    }
-
-    public Lane getLane(int id) {
-        return lanes.get(id);
     }
 
     public ArrayList<Lane> getLanes() {

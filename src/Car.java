@@ -8,11 +8,12 @@ public class Car extends Thread {
     int waitingTime = 0;
     Intersection intersection;
     MainApplicationWindow mainApplicationWindow;
-    private STATUS status = null;
+    private STATUS status = STATUS.ARRIVING;
     private Entrance startingEntrance;
     private Entrance.Lane choosenLane;
     private Entrance.Path choosenPath;
-
+    private boolean isAlive = true;
+    private final int carMoveDelay = 50;
 
     Car(Intersection intersection, MainApplicationWindow mainApplicationWindow) {
         this.id = number;
@@ -23,7 +24,7 @@ public class Car extends Thread {
 
     @Override
     public void run() {
-        while (true) {
+        while (isAlive) {
             if (choosenPath == null || status == null) {
                 findNewPath();
             }
@@ -35,6 +36,10 @@ public class Car extends Thread {
                 case ARRIVING -> handleCarArrivingState();
             }
         }
+    }
+
+    public void stopLoop() {
+        isAlive = false;
     }
 
     public int getCarId() {
@@ -50,27 +55,21 @@ public class Car extends Thread {
 
         for (int i = 0; i < intersectionPoints.size() - 1; i++) {
             Point point = intersectionPoints.get(i + 1);
-            position.setX((int)(point.getX() - 7));
-            position.setY((int)(point.getY() - 7));
+            position.setX(point.getX());
+            position.setY(point.getY());
 
-            try {
-                Thread.sleep(100);
-                Main.getIntersection().getIntersectionJPanelHandler().repaint();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            SleepWithRepaint(carMoveDelay);
         }
 
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        status = STATUS.MOVING;
+        status = STATUS.WAITING;
     }
 
     private void handleCarWaitingOnEntrance() {
+        if (!choosenLane.isGreenLight()) {
+            status = STATUS.MOVING;
+            return;
+        }
+
         waitingTime++;
     }
 
@@ -79,24 +78,27 @@ public class Car extends Thread {
 
         for (int i = 0; i < intersectionPoints.size() - 1; i++) {
             Point point = intersectionPoints.get(i + 1);
-            position.setX((int)(point.getX() - 7));
-            position.setY((int)(point.getY() - 7));
+            position.setX(point.getX());
+            position.setY(point.getY());
 
-            try {
-                Thread.sleep(100);
-                Main.getIntersection().getIntersectionJPanelHandler().repaint();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            SleepWithRepaint(carMoveDelay);
         }
 
         status = STATUS.ARRIVING;
     }
 
     private void handleCarArrivingState() {
-        // GET PATH OF END INTERSECTION POINTS
+        ArrayList<Point> intersectionPoints = choosenPath.getEndEntrance().getExitPathsPoints().get(choosenPath.getEndExitID());
 
-        // DELETE CAR
+        for (int i = 0; i < intersectionPoints.size() - 1; i++) {
+            Point point = intersectionPoints.get(i + 1);
+            position.setX(point.getX());
+            position.setY(point.getY());
+
+            SleepWithRepaint(carMoveDelay);
+        }
+
+        Main.deleteCar(this);
     }
 
     private void findNewPath() {
@@ -115,9 +117,7 @@ public class Car extends Thread {
         double startPointX = entranceStartPoint.getX();
         double startPointY = entranceStartPoint.getY();
 
-        // 7 is half of 14 which is the size of the car (for make it centered)
-        position = new Point((int)(startPointX - 7), (int)(startPointY - 7));
-
+        position = new Point((int)(startPointX), (int)(startPointY));
         status = STATUS.MOVING_TO_ENTRANCE;
     }
 
@@ -133,6 +133,16 @@ public class Car extends Thread {
             }
         }
         findNewPath();
+    }
+
+    private void SleepWithRepaint(int time) {
+        try {
+            Thread.sleep(time);
+
+            Main.getIntersection().getIntersectionJPanelHandler().repaint();
+        } catch (InterruptedException e) {
+            e.printStackTrace(System.out);
+        }
     }
 
     enum STATUS {

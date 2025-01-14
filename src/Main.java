@@ -32,4 +32,19 @@ public class Main {
     public static ArrayList<Car> getCarsObjectsList() {
         return carsObjectsList;
     }
+
+    public static void deleteCar(Car car) {
+        car.stopLoop();
+
+        try {
+            // For prevent sleep interrupted exception
+            car.interrupt();
+            carsObjectsList.remove(car);
+
+            System.out.println("Car deleted. New size: " + carsObjectsList.size());
+        }
+        catch (Exception e) {
+            System.out.println("Error while deleting car: " + e.getMessage());
+        }
+    }
 }

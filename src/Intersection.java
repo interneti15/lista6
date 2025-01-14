@@ -141,6 +141,9 @@ public class Intersection extends Thread {
         }
 
         private void debugPaths(Graphics2D graphics2D) {
+            final int carWidth = 14;
+            final int carHeight = 14;
+
             for (int i = 0; i < this.intersection.entrancesNumber; i++) {
                 Entrance entrance = this.intersection.entrances.get(i);
 
@@ -191,7 +194,7 @@ public class Intersection extends Thread {
 
             for (Car car : Main.getCarsObjectsList()) {
                 graphics2D.setColor(MyColors.getUniqueColor(car.getCarId()));
-                graphics2D.fillRect(car.getPosition().getXFloored(), car.getPosition().getYFloored(), 14, 14);
+                graphics2D.fillRect(car.getPosition().getXFloored() - (carWidth / 2), car.getPosition().getYFloored() - (carHeight / 2), carWidth, carHeight);
             }
         }
     }
