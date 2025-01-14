@@ -3,9 +3,9 @@ import java.util.Random;
 
 public class Car extends Thread {
     private static int number = 0;
-    private int id;
+    private final int id;
     Point position = new Point(300, 300);
-    int waitingTime = 0;
+    int waitingTime = 1;
     Intersection intersection;
     MainApplicationWindow mainApplicationWindow;
     private STATUS status = null;
@@ -27,6 +27,9 @@ public class Car extends Thread {
             if (choosenPath == null || status == null) {
                 findNewPath();
             }
+
+            //choosenPath.getStartLane().getQueuePoints();
+            //choosenPath.getEndEntrance().getExitPathsPoints().get(choosenPath.getEndExitID())
 
             switch (status) {
                 case MOVING_TO_ENTRANCE -> handleCarMovingToEntranceState();
@@ -126,6 +129,7 @@ public class Car extends Thread {
         for (Entrance.Lane lane : availableLanes) {
             for (Entrance.Path path : lane.getPaths()) {
                 if (path.getEndEntrance().getId() == endEntranceID) {
+                    lane.addCarToQueue(this);
                     this.choosenLane = lane;
                     this.choosenPath = path;
                     return;

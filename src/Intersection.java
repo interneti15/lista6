@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import javax.swing.*;
 
 public class Intersection extends Thread {
@@ -20,7 +21,9 @@ public class Intersection extends Thread {
 
     @Override
     public void run() {
-        while (true) {
+        int maxIterations = 2;
+        int iteration = 0;
+        while (maxIterations != iteration) {
 
             manageGreenLights();
 
@@ -29,12 +32,42 @@ public class Intersection extends Thread {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+
+            iteration++;
         }
     }
 
     private void manageGreenLights() {
-    }
+        ArrayList<Entrance.Lane> laneEntries = new ArrayList<>();
+        for (Entrance entrance : entrances) {
+            for (Entrance.Lane lane : entrance.getLanes()) {
+                lane.calculateLaneHotnesIndex();
+                laneEntries.add(lane);
+            }
+        }
 
+        int sum = 0;
+        for (Entrance.Lane lane : laneEntries) {
+            sum += lane.getHottness();
+        }
+        if (sum == 0){
+            return;
+        }
+
+        laneEntries.sort(Comparator.comparingDouble(Entrance.Lane::getHottness).reversed());
+        ArrayList<Point.Line> lines = new ArrayList<>();
+        for (Entrance.Lane lane : laneEntries) {
+            System.out.println("Lane at entrance #" + lane.getEntrance().getId() + " lane #" + lane.getId() + " hottness " + lane.getHottness());
+            if (!MathUtils.doesLinesIntersectFromTwoArrays(lines, lane.pathsToLines())){
+                lines.addAll(lane.pathsToLines());
+                lane.setGreenLight(true);
+                continue;
+            }
+            lane.setGreenLight(false);
+        }
+
+        intersectionJPanelHandler.repaint();
+    }
     public void increaseCarsOnIntersection(){
         totalCarsOnIntersectionThisTurn++;
     }
@@ -164,6 +197,12 @@ public class Intersection extends Thread {
                         graphics2D.fillOval(point.getXFloored(), point.getYFloored(), 2, 2);
                     }
 
+                    if (lane.isGreenLight()){
+                        graphics2D.setColor(Color.GREEN);
+                    }
+                    else {
+                        graphics2D.setColor(Color.RED);
+                    }
 
                     for (int k = 0; k < lane.getPaths().size(); k++) {
                         Entrance.Path path = lane.getPaths().get(k);
