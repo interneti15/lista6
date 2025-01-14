@@ -1,6 +1,6 @@
-import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import javax.swing.*;
 
 public class Intersection extends Thread {
     private ArrayList<Entrance> entrances = new ArrayList<>();
@@ -187,6 +187,11 @@ public class Intersection extends Thread {
 
                 graphics2D.drawString(String.valueOf(entrance.getId()), middleX, middleY);
                 graphics2D.setColor(Color.black);
+            }
+
+            for (Car car : Main.getCarsObjectsList()) {
+                graphics2D.setColor(MyColors.getUniqueColor(car.getCarId()));
+                graphics2D.fillRect(car.getPosition().getXFloored(), car.getPosition().getYFloored(), 14, 14);
             }
         }
     }

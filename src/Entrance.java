@@ -132,6 +132,10 @@ public class Entrance {
 
     }
 
+    public Lane getLane(int id) {
+        return lanes.get(id);
+    }
+
     public ArrayList<Lane> getLanes() {
         return lanes;
     }
@@ -170,8 +174,7 @@ public class Entrance {
         }
 
         private void buildQueuePoints() {
-
-            double SCALE = 0.1;
+            double SCALE = 2;
             Point step = new Point(Math.cos(this.directionAngle + Math.PI), (-1)*Math.sin(this.directionAngle + Math.PI));
             Point currentPoint = new Point(this.position);
             while (currentPoint.getX() <= this.entrance.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getY() <= this.entrance.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getX() >= 0 && currentPoint.getY() >= 0) {
@@ -232,6 +235,10 @@ public class Entrance {
 
         public void setGreenLight(boolean greenLight) {
             isGreenLight = greenLight;
+        }
+
+        public Point getPosition() {
+            return position;
         }
     }
 

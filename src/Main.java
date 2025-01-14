@@ -28,4 +28,8 @@ public class Main {
     public static void setIntersection(Intersection intersection) {
         Main.intersection = intersection;
     }
+
+    public static ArrayList<Car> getCarsObjectsList() {
+        return carsObjectsList;
+    }
 }
