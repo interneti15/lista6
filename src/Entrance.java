@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class Entrance {
-    private static int ROAD_LANES = 5;
+    private static int ROAD_LANES = 3;
     private final Point start;
     private final Point end;
     private final int id;
@@ -157,6 +157,7 @@ public class Entrance {
         private final ArrayList<Path> paths = new ArrayList<>();
         private final ArrayList<Point> queuePoints = new ArrayList<>();
         private boolean isGreenLight = false;
+        private int hottness = 0;
 
         public Lane(int id, Point position, int numberOfPaths, double directionAngle, Entrance entrance) {
             this.id = id;
@@ -180,6 +181,14 @@ public class Entrance {
             Collections.reverse(queuePoints);
         }
 
+        public Entrance getEntrance() {
+            return entrance;
+        }
+
+        public int getHottness() {
+            return hottness;
+        }
+
         /**
          * Use after all paths and entrances are initialized!!!
          */
@@ -195,6 +204,7 @@ public class Entrance {
                 double distance = this.position.distanceTo(endPoint);
                 //double offset = Math.sqrt(distance) * (distance / 60) * ((-distance)/143 + (243d/71d));
                 double offset = distance * Math.sqrt(2) / 3;
+                offset = offset / 1.1;
                 //System.out.println(distance);
                 System.out.println("            Bulding path #" + this.getId() + ", from: " + this.entrance.id + ", to: " + connectedToEndID + ", exit id: " + (ROAD_LANES - 1 - this.id));
                 ArrayList<Point> curvePoints = CurveGenerator.generateCurveAndPoints(this.position.getX(), this.position.getY(), this.directionAngle, endPoint.getX(), endPoint.getY(), endEntrance.degreeFacingMiddle, SAMPLING_RATE, offset);
@@ -218,12 +228,12 @@ public class Entrance {
         public int getId() {
             return id;
         }
-        public int calculateLaneHotnesIndex(){
+        public void calculateLaneHotnesIndex(){
             int sum = 0;
             for (Car car : waitingCars) {
                 sum += car.waitingTime;
             }
-            return sum;
+            this.hottness = sum;
         }
         public boolean isGreenLight() {
             return isGreenLight;
@@ -231,6 +241,14 @@ public class Entrance {
 
         public void setGreenLight(boolean greenLight) {
             isGreenLight = greenLight;
+        }
+
+        public ArrayList<Point.Line> pathsToLines(){
+            ArrayList<Point.Line> lines = new ArrayList<>();
+            for (Path path : this.paths){
+                lines.add(new Point.Line(path.startLane.position, path.endEntrance.exitPoints.get(path.endExitID)));
+            }
+            return lines;
         }
 
         public Point getPosition() {
