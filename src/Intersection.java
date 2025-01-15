@@ -1,15 +1,17 @@
+import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import javax.swing.*;
 
 public class Intersection extends Thread {
+    private final int intersectionTime = 5000;
     private ArrayList<Entrance> entrances = new ArrayList<>();
     private IntersectionHandler intersectionJPanelHandler;
     private int entrancesNumber;
     private MainApplicationWindow mainApplicationWindow;
     private int totalCarsOnIntersectionThisTurn = 0;
-    private final int intersectionTime = 5000;
 
     Intersection(int entrances, MainApplicationWindow mainApplicationWindow) {
         this.entrancesNumber = entrances;
@@ -21,9 +23,10 @@ public class Intersection extends Thread {
 
     @Override
     public void run() {
-        int maxIterations = 2;
+        waitForFirstCars();
+
         int iteration = 0;
-        while (maxIterations != iteration) {
+        while (true) {
 
             manageGreenLights();
 
@@ -33,7 +36,33 @@ public class Intersection extends Thread {
                 throw new RuntimeException(e);
             }
 
+            setAllToRed();
+
+            try {
+                Thread.sleep(6000 + entrancesNumber * 1000L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             iteration++;
+        }
+    }
+
+    private void waitForFirstCars() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        while (Main.getCarsObjectsList().size() <= 0) {
+        }
+    }
+
+    private void setAllToRed() {
+        for (Entrance entrance : entrances) {
+            for (Entrance.Lane lane : entrance.getLanes()) {
+                lane.setGreenLight(false);
+            }
         }
     }
 
@@ -41,36 +70,40 @@ public class Intersection extends Thread {
         ArrayList<Entrance.Lane> laneEntries = new ArrayList<>();
         for (Entrance entrance : entrances) {
             for (Entrance.Lane lane : entrance.getLanes()) {
-                lane.calculateLaneHotnesIndex();
+                lane.calculateLaneHotnessIndex();
                 laneEntries.add(lane);
             }
         }
 
-        int sum = 0;
-        for (Entrance.Lane lane : laneEntries) {
-            sum += lane.getHottness();
-        }
-        if (sum == 0){
-            return;
-        }
+        /*for (Entrance.Lane lane : laneEntries) {
+            System.out.println("Before Sort: " + lane.getHottness());
+        }*/
 
         laneEntries.sort(Comparator.comparingDouble(Entrance.Lane::getHottness).reversed());
+
+        /*for (Entrance.Lane lane : laneEntries) {
+            System.out.println("After Sort: " + lane.getHottness());
+        }*/
+
         ArrayList<Point.Line> lines = new ArrayList<>();
         for (Entrance.Lane lane : laneEntries) {
-            System.out.println("Lane at entrance #" + lane.getEntrance().getId() + " lane #" + lane.getId() + " hottness " + lane.getHottness());
-            if (!MathUtils.doesLinesIntersectFromTwoArrays(lines, lane.pathsToLines())){
+            //System.out.println("Lane at entrance #" + lane.getEntrance().getId() + " lane #" + lane.getId() + " hottness " + lane.getHottness());
+            if (!MathUtils.doesLinesIntersectFromTwoArrays(lines, lane.pathsToLines())) {
                 lines.addAll(lane.pathsToLines());
                 lane.setGreenLight(true);
                 continue;
             }
             lane.setGreenLight(false);
         }
+        //System.out.println();
 
         intersectionJPanelHandler.repaint();
     }
-    public void increaseCarsOnIntersection(){
+
+    public void increaseCarsOnIntersection() {
         totalCarsOnIntersectionThisTurn++;
     }
+
     public IntersectionHandler getIntersectionJPanelHandler() {
         return intersectionJPanelHandler;
     }
@@ -137,6 +170,13 @@ public class Intersection extends Thread {
             this.setBackground(MyColors.MainForeground);
             this.setBounds(0, 0, mainApplicationWindow.getWindowSize(), mainApplicationWindow.getWindowSize());
             this.setLayout(null);
+            this.addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    // Print the current mouse position to the console
+                    System.out.println("Mouse moved to: (" + e.getX() + ", " + e.getY() + ")");
+                }
+            });
             mainApplicationWindow.add(this);
 
             /*this.addMouseMotionListener(new MouseMotionAdapter() {
@@ -200,10 +240,9 @@ public class Intersection extends Thread {
                         graphics2D.fillOval(point.getXFloored(), point.getYFloored(), 2, 2);
                     }
 
-                    if (lane.isGreenLight()){
+                    if (lane.isGreenLight()) {
                         graphics2D.setColor(Color.GREEN);
-                    }
-                    else {
+                    } else {
                         graphics2D.setColor(Color.RED);
                     }
 

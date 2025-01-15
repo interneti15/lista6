@@ -4,8 +4,9 @@ import java.util.Random;
 public class Car extends Thread {
     private static int number = 0;
     private final int id;
+    private final int CAR_MOVE_DELAY = 50;
     Point position = new Point(300, 300);
-    int waitingTime = 1;
+    double waitingTime = 5;
     Intersection intersection;
     MainApplicationWindow mainApplicationWindow;
     private STATUS status = STATUS.ARRIVING;
@@ -13,7 +14,6 @@ public class Car extends Thread {
     private Entrance.Lane choosenLane;
     private Entrance.Path choosenPath;
     private boolean isAlive = true;
-    private final int carMoveDelay = 50;
 
     Car(Intersection intersection, MainApplicationWindow mainApplicationWindow) {
         this.id = number;
@@ -28,9 +28,6 @@ public class Car extends Thread {
             if (choosenPath == null || status == null) {
                 findNewPath();
             }
-
-            //choosenPath.getStartLane().getQueuePoints();
-            //choosenPath.getEndEntrance().getExitPathsPoints().get(choosenPath.getEndExitID())
 
             switch (status) {
                 case MOVING_TO_ENTRANCE -> handleCarMovingToEntranceState();
@@ -55,25 +52,74 @@ public class Car extends Thread {
 
     private void handleCarMovingToEntranceState() {
         ArrayList<Point> intersectionPoints = choosenPath.getStartLane().getQueuePoints();
+        ArrayList<Integer> intersectionPointsOccupied = choosenPath.getStartLane().getQueuePointsOccupied();
 
-        for (int i = 0; i < intersectionPoints.size() - 1; i++) {
-            Point point = intersectionPoints.get(i + 1);
-            position.setX(point.getX());
-            position.setY(point.getY());
+        while (intersectionPointsOccupied.getFirst() != -1){
+            sleepWithRepaint(CAR_MOVE_DELAY);
+        }
+        intersectionPointsOccupied.set(0,this.id);
 
-            SleepWithRepaint(carMoveDelay);
+        for (int i = 0; i < intersectionPoints.size(); i++) {
+            boolean available = checkForSpaceAvailability(intersectionPointsOccupied, i);
+
+            if (available) {
+                Point point = intersectionPoints.get(i);
+                position.setX(point.getX());
+                position.setY(point.getY());
+                occupySpace(intersectionPointsOccupied,i);
+                if (i - 6 >= 0){
+                    intersectionPointsOccupied.set(i - 6, -1);
+                }
+            } else {
+                waitingTime += 0.000001;
+                i--;
+            }
+
+            /*for (Integer integer : intersectionPointsOccupied){
+                System.out.print(String.valueOf(integer+1));
+            }
+            System.out.println();*/
+
+            sleepWithRepaint(CAR_MOVE_DELAY);
         }
 
+        /*for (Integer integer : intersectionPointsOccupied){
+            System.out.print(String.valueOf(integer+1));
+        }
+        System.out.println();*/
         status = STATUS.WAITING;
     }
 
+    private void occupySpace(ArrayList<Integer> intersectionPointsOccupied, int index) {
+        for (int i = index - 5; i < intersectionPointsOccupied.size() && i < index + 5; i++) {
+            if (i < 0){
+                continue;
+            }
+            intersectionPointsOccupied.set(i, this.id);
+        }
+    }
+
+    private boolean checkForSpaceAvailability(ArrayList<Integer> intersectionPointsOccupied, int index) {
+        for (int i = index; i < intersectionPointsOccupied.size() && i < index + 10; i++) {
+            if (intersectionPointsOccupied.get(i) != -1 && intersectionPointsOccupied.get(i) != this.id) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void handleCarWaitingOnEntrance() {
-        if (!choosenLane.isGreenLight()) {
+        ArrayList<Integer> intersectionPointsOccupied = choosenPath.getStartLane().getQueuePointsOccupied();
+        boolean test = choosenLane.isGreenLight();
+        if (choosenLane.isGreenLight()) {
             status = STATUS.MOVING;
+            for (int i = intersectionPointsOccupied.size() - 6; i < intersectionPointsOccupied.size(); i++) {
+                intersectionPointsOccupied.set(i, -1);
+            }
             return;
         }
 
-        waitingTime++;
+        waitingTime += 0.000001;
     }
 
     private void handleCarMovingState() {
@@ -84,7 +130,7 @@ public class Car extends Thread {
             position.setX(point.getX());
             position.setY(point.getY());
 
-            SleepWithRepaint(carMoveDelay);
+            sleepWithRepaint(CAR_MOVE_DELAY);
         }
 
         status = STATUS.ARRIVING;
@@ -98,29 +144,29 @@ public class Car extends Thread {
             position.setX(point.getX());
             position.setY(point.getY());
 
-            SleepWithRepaint(carMoveDelay);
+            sleepWithRepaint(CAR_MOVE_DELAY);
         }
 
         Main.deleteCar(this);
+        Main.addNewCar();
     }
 
     private void findNewPath() {
         int startingEntranceID = new Random().nextInt(intersection.getEntrances().size());
-        int endEntranceID = (startingEntranceID + new Random().nextInt(intersection.getEntrances().size() - 1)) % intersection.getEntrances().size();
+        int endEntranceID = (startingEntranceID + new Random().nextInt(intersection.getEntrances().size() - 1) + 1) % intersection.getEntrances().size();
 
-        System.out.println("start: " + startingEntranceID);
-        System.out.println("end: " + endEntranceID);
+        //System.out.println("start: " + startingEntranceID + " end: " + endEntranceID);
 
         startingEntrance = intersection.getEntrances().get(startingEntranceID);
-        
+
         findCorrectPath(intersection, startingEntranceID, endEntranceID);
-        System.out.println("Car " + id + " at entrance: " + choosenPath.getStartEntrance().getId() + " in lane: " + choosenPath.getStartLane().getId() + " destination at: " + choosenPath.getEndEntrance().getId() + " exit number: " + choosenPath.getEndExitID());
+        //System.out.println("Car " + id + " at entrance: " + choosenPath.getStartEntrance().getId() + " in lane: " + choosenPath.getStartLane().getId() + " destination at: " + choosenPath.getEndEntrance().getId() + " exit number: " + choosenPath.getEndExitID());
 
         Point entranceStartPoint = choosenPath.getStartLane().getQueuePoints().getFirst();
         double startPointX = entranceStartPoint.getX();
         double startPointY = entranceStartPoint.getY();
 
-        position = new Point((int)(startPointX), (int)(startPointY));
+        position = new Point((int) (startPointX), (int) (startPointY));
         status = STATUS.MOVING_TO_ENTRANCE;
     }
 
@@ -136,14 +182,15 @@ public class Car extends Thread {
                 }
             }
         }
-        findNewPath();
+        //findCorrectPath(intersection, startingEntranceID, endEntranceID);
+        throw new IllegalStateException("IllegalPath");
     }
 
-    private void SleepWithRepaint(int time) {
+    private void sleepWithRepaint(int time) {
         try {
             Thread.sleep(time);
 
-            Main.getIntersection().getIntersectionJPanelHandler().repaint();
+            intersection.getIntersectionJPanelHandler().repaint();
         } catch (InterruptedException e) {
             e.printStackTrace(System.out);
         }
