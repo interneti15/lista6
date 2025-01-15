@@ -208,9 +208,6 @@ public class Entrance {
          * Use after all paths and entrances are initialized!!!
          */
         public void calculatePaths() {
-
-
-
             for (int i = 0; i < numberOfPaths; i++) {
                 int connectedToEndID = (entrance.id + (ROAD_LANES - 1 - this.id) + 1 + i) % entrance.numberOfEntrances;
                 Entrance endEntrance = this.entrance.intersection.getEntrances().get(connectedToEndID);
@@ -238,6 +235,10 @@ public class Entrance {
 
         public void addCarToQueue(Car car) {
             this.waitingCars.add(car);
+        }
+
+        public void removeCarFromQueue(Car car) {
+            this.waitingCars.remove(car);
         }
 
         public ArrayList<Point> getQueuePoints() {

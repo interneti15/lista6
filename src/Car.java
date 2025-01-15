@@ -3,10 +3,10 @@ import java.util.Random;
 
 public class Car extends Thread {
     private static int number = 0;
-    private final int id;
+    private int id;
     private final int CAR_MOVE_DELAY = 50;
     Point position = new Point(300, 300);
-    double waitingTime = 5;
+    double waitingTime = 0;
     Intersection intersection;
     MainApplicationWindow mainApplicationWindow;
     private STATUS status = STATUS.ARRIVING;
@@ -51,6 +51,7 @@ public class Car extends Thread {
     }
 
     private void handleCarMovingToEntranceState() {
+        waitingTime = 0;
         ArrayList<Point> intersectionPoints = choosenPath.getStartLane().getQueuePoints();
         ArrayList<Integer> intersectionPointsOccupied = choosenPath.getStartLane().getQueuePointsOccupied();
 
@@ -59,10 +60,17 @@ public class Car extends Thread {
         }
         intersectionPointsOccupied.set(0,this.id);
 
+        //boolean didMoveInPreviousIteration = false;
+        long startedWaitingOnTime = System.currentTimeMillis();
+        //double waitingTimeCopy = waitingTime;
+
         for (int i = 0; i < intersectionPoints.size(); i++) {
             boolean available = checkForSpaceAvailability(intersectionPointsOccupied, i);
 
             if (available) {
+/*                if (!didMoveInPreviousIteration){
+                    waitingTimeCopy = waitingTime;
+                }*/
                 Point point = intersectionPoints.get(i);
                 position.setX(point.getX());
                 position.setY(point.getY());
@@ -70,8 +78,20 @@ public class Car extends Thread {
                 if (i - 6 >= 0){
                     intersectionPointsOccupied.set(i - 6, -1);
                 }
+                //didMoveInPreviousIteration = true;
             } else {
-                waitingTime += 0.000001;
+                //waitingTime += 1;
+
+                /*if (didMoveInPreviousIteration){
+                    startedWaitingOnTime = System.currentTimeMillis();
+                }
+                waitingTime = waitingTimeCopy + (System.currentTimeMillis() - startedWaitingOnTime);
+
+
+                didMoveInPreviousIteration = false;*/
+                waitingTime += System.currentTimeMillis() - startedWaitingOnTime;
+                startedWaitingOnTime = System.currentTimeMillis(); // Reset only after incrementing
+
                 i--;
             }
 
@@ -110,20 +130,27 @@ public class Car extends Thread {
 
     private void handleCarWaitingOnEntrance() {
         ArrayList<Integer> intersectionPointsOccupied = choosenPath.getStartLane().getQueuePointsOccupied();
-        boolean test = choosenLane.isGreenLight();
-        if (choosenLane.isGreenLight()) {
-            status = STATUS.MOVING;
-            for (int i = intersectionPointsOccupied.size() - 6; i < intersectionPointsOccupied.size(); i++) {
-                intersectionPointsOccupied.set(i, -1);
+        long startedWaitingOnTime = System.currentTimeMillis();
+        while (true)
+        {
+            if (choosenLane.isGreenLight()) {
+                status = STATUS.MOVING;
+                for (int i = intersectionPointsOccupied.size() - 6; i < intersectionPointsOccupied.size(); i++) {
+                    intersectionPointsOccupied.set(i, -1);
+                }
+                return;
             }
-            return;
-        }
 
-        waitingTime += 0.000001;
+            waitingTime += System.currentTimeMillis() - startedWaitingOnTime;
+            startedWaitingOnTime = System.currentTimeMillis(); // Reset only after incrementing
+            sleepWithRepaint(CAR_MOVE_DELAY);
+        }
     }
 
     private void handleCarMovingState() {
         ArrayList<Point> intersectionPoints = choosenPath.getIntersectionPath();
+        choosenPath.getStartLane().removeCarFromQueue(this);
+        waitingTime = 0;
 
         for (int i = 0; i < intersectionPoints.size() - 1; i++) {
             Point point = intersectionPoints.get(i + 1);
@@ -133,6 +160,7 @@ public class Car extends Thread {
             sleepWithRepaint(CAR_MOVE_DELAY);
         }
 
+        intersection.increaseCarsThatExitedIntersection();
         status = STATUS.ARRIVING;
     }
 
@@ -147,8 +175,11 @@ public class Car extends Thread {
             sleepWithRepaint(CAR_MOVE_DELAY);
         }
 
-        Main.deleteCar(this);
-        Main.addNewCar();
+        this.regenerateID();
+        status = null;
+
+        //Main.deleteCar(this);
+        //Main.addNewCar();
     }
 
     private void findNewPath() {
@@ -194,6 +225,7 @@ public class Car extends Thread {
         } catch (InterruptedException e) {
             e.printStackTrace(System.out);
         }
+        intersection.getIntersectionJPanelHandler().repaint();
     }
 
     enum STATUS {
@@ -201,5 +233,10 @@ public class Car extends Thread {
         WAITING,
         MOVING,
         ARRIVING
+    }
+
+    private void regenerateID(){
+        this.id = number;
+        number++;
     }
 }

@@ -11,7 +11,9 @@ public class Intersection extends Thread {
     private IntersectionHandler intersectionJPanelHandler;
     private int entrancesNumber;
     private MainApplicationWindow mainApplicationWindow;
-    private int totalCarsOnIntersectionThisTurn = 0;
+    private int carsThatExitedIntersection = 0;
+    private long startTime;
+    private final ArrayList<Double> allCurrentAverageWaitingTimes = new ArrayList<>();
 
     Intersection(int entrances, MainApplicationWindow mainApplicationWindow) {
         this.entrancesNumber = entrances;
@@ -19,6 +21,7 @@ public class Intersection extends Thread {
         //calculateVertices();
         refreshEntrances();
         this.intersectionJPanelHandler = new IntersectionHandler(entrances, mainApplicationWindow, this);
+        startTime = System.currentTimeMillis();
     }
 
     @Override
@@ -28,16 +31,21 @@ public class Intersection extends Thread {
         int iteration = 0;
         while (true) {
 
+            System.out.println("Managing green lights");
             manageGreenLights();
+            //setAllToRed();
 
+            System.out.println("Waiting 5000ms");
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
+            System.out.println("Setting all lights to red");
             setAllToRed();
 
+            System.out.println("Waiting 6000ms + " + entrancesNumber + " seconds");
             try {
                 Thread.sleep(6000 + entrancesNumber * 1000L);
             } catch (InterruptedException e) {
@@ -100,8 +108,8 @@ public class Intersection extends Thread {
         intersectionJPanelHandler.repaint();
     }
 
-    public void increaseCarsOnIntersection() {
-        totalCarsOnIntersectionThisTurn++;
+    public void increaseCarsThatExitedIntersection() {
+        carsThatExitedIntersection++;
     }
 
     public IntersectionHandler getIntersectionJPanelHandler() {
@@ -203,6 +211,26 @@ public class Intersection extends Thread {
             graphics2D.setColor(Color.BLACK);
             graphics2D.setStroke(new BasicStroke(4));
 
+            String formattedExitRate = getFormattedExitRate();
+
+            /*System.out.println("Car counter: " + intersection.carsThatExitedIntersection);
+            System.out.println("Time elapsed: " + ((System.currentTimeMillis() - intersection.startTime)/1000));*/
+
+            graphics2D.setColor(Color.white);
+            graphics2D.drawString("Average intersection", 620, 50);
+            graphics2D.drawString("capacity", 640, 70);
+            graphics2D.drawString((formattedExitRate), 650, 90);
+            graphics2D.drawString(" cars per minute", 625, 110);
+            graphics2D.setColor(Color.black);
+
+            String averageWaitingTimeString = getTotalCarsAverageWaitingTimeFormatted();
+            graphics2D.setColor(Color.white);
+            graphics2D.drawString("Average waiting", 620, 130);
+            graphics2D.drawString("time", 640, 150);
+            graphics2D.drawString(averageWaitingTimeString, 650, 170);
+            graphics2D.setColor(Color.black);
+
+
             for (Entrance entrance : intersection.getEntrances()) {
                 Point start = entrance.getStart();
                 Point end = entrance.getEnd();
@@ -211,6 +239,29 @@ public class Intersection extends Thread {
                 }
             }
             debugPaths(graphics2D);
+        }
+
+        private String getTotalCarsAverageWaitingTimeFormatted() {
+            double totalWaitingTime = 0;
+            for (Car car : Main.getCarsObjectsList()){
+                totalWaitingTime += car.waitingTime;
+            }
+            double average = totalWaitingTime / (double) Main.getCarsObjectsList().size();
+            intersection.allCurrentAverageWaitingTimes.add(average);
+
+            double sumOfAverages = 0;
+            for (Double number : intersection.allCurrentAverageWaitingTimes){
+                sumOfAverages += number;
+            }
+            double averageAverage = sumOfAverages / intersection.allCurrentAverageWaitingTimes.size();
+            return String.format("%.2f", (averageAverage)/1000);
+        }
+
+        private String getFormattedExitRate() {
+            double carsExited = (double) intersection.carsThatExitedIntersection;
+            double elapsedTime = (double) (System.currentTimeMillis() - intersection.startTime) / 1000;
+            double exitRate = carsExited / elapsedTime;
+            return String.format("%.2f", exitRate*60);
         }
 
         private void debugPaths(Graphics2D graphics2D) {
