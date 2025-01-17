@@ -1,6 +1,5 @@
 import java.awt.geom.CubicCurve2D;
 import java.util.ArrayList;
-import java.util.List;
 public class CurveGenerator {
 
     /**
@@ -21,12 +20,12 @@ public class CurveGenerator {
         // Increased offset for more pronounced curvature
 
         // Calculate control points for the start point
-        double ctrl1X = x1 + (double) (offset * Math.cos((angle1)));
-        double ctrl1Y = y1 - (double) (offset * Math.sin((angle1)));
+        double ctrl1X = x1 + (offset * Math.cos((angle1)));
+        double ctrl1Y = y1 - (offset * Math.sin((angle1)));
 
         // Calculate control points for the end point
-        double ctrl2X = x2 + (double) (offset * Math.cos((angle2)));
-        double ctrl2Y = y2 - (double) (offset * Math.sin((angle2)));
+        double ctrl2X = x2 + (offset * Math.cos((angle2)));
+        double ctrl2Y = y2 - (offset * Math.sin((angle2)));
 
         // Create and return the curve
         return new CubicCurve2D.Double(x1, y1, ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, x2, y2);

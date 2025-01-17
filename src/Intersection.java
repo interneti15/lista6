@@ -6,21 +6,20 @@ import java.util.ArrayList;
 import java.util.Comparator;
 
 public class Intersection extends Thread {
-    private final int intersectionTime = 5000;
-    private ArrayList<Entrance> entrances = new ArrayList<>();
-    private IntersectionHandler intersectionJPanelHandler;
-    private int entrancesNumber;
-    private MainApplicationWindow mainApplicationWindow;
-    private int carsThatExitedIntersection = 0;
-    private long startTime;
     private final ArrayList<Double> allCurrentAverageWaitingTimes = new ArrayList<>();
+    private final ArrayList<Entrance> entrances = new ArrayList<>();
+    private final IntersectionHandler intersectionJPanelHandler;
+    private final int entrancesNumber;
+    private final MainApplicationWindow mainApplicationWindow;
+    private int carsThatExitedIntersection = 0;
+    private final long startTime;
 
     Intersection(int entrances, MainApplicationWindow mainApplicationWindow) {
         this.entrancesNumber = entrances;
         this.mainApplicationWindow = mainApplicationWindow;
         //calculateVertices();
         refreshEntrances();
-        this.intersectionJPanelHandler = new IntersectionHandler(entrances, mainApplicationWindow, this);
+        this.intersectionJPanelHandler = new IntersectionHandler(mainApplicationWindow, this);
         startTime = System.currentTimeMillis();
     }
 
@@ -28,7 +27,6 @@ public class Intersection extends Thread {
     public void run() {
         waitForFirstCars();
 
-        int iteration = 0;
         while (true) {
 
             System.out.println("Managing green lights");
@@ -45,14 +43,13 @@ public class Intersection extends Thread {
             System.out.println("Setting all lights to red");
             setAllToRed();
 
-            System.out.println("Waiting 6000ms + " + entrancesNumber + " seconds");
+            System.out.println("Waiting 6s + " + (entrancesNumber) + " seconds");
             try {
                 Thread.sleep(6000 + entrancesNumber * 1000L);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            iteration++;
         }
     }
 
@@ -70,30 +67,61 @@ public class Intersection extends Thread {
         for (Entrance entrance : entrances) {
             for (Entrance.Lane lane : entrance.getLanes()) {
                 lane.setGreenLight(false);
+                lane.setGreenLightForAllPaths(false);
             }
         }
     }
 
     private void manageGreenLights() {
+        ArrayList<Point.Line> lines = new ArrayList<>();
+
         ArrayList<Entrance.Lane> laneEntries = new ArrayList<>();
         for (Entrance entrance : entrances) {
-            for (Entrance.Lane lane : entrance.getLanes()) {
-                lane.calculateLaneHotnessIndex();
-                laneEntries.add(lane);
-            }
+            laneEntries.addAll(entrance.getLanes());
         }
-
         laneEntries.sort(Comparator.comparingDouble(Entrance.Lane::getHottness).reversed());
-
-        ArrayList<Point.Line> lines = new ArrayList<>();
         for (Entrance.Lane lane : laneEntries) {
+            if (lane.getWaitingCars().isEmpty()) {
+                continue;
+            }
             if (!MathUtils.doesLinesIntersectFromTwoArrays(lines, lane.pathsToLines())) {
                 lines.addAll(lane.pathsToLines());
                 lane.setGreenLight(true);
+                lane.setGreenLightForAllPaths(true);
                 continue;
             }
             lane.setGreenLight(false);
+            lane.setGreenLightForAllPaths(false);
         }
+
+
+        ArrayList<Entrance.Path> pathEntries = new ArrayList<>();
+        for (Entrance entrance : entrances) {
+            for (Entrance.Lane lane : entrance.getLanes()) {
+                pathEntries.addAll(lane.getPaths());
+            }
+        }
+        pathEntries.sort(Comparator.comparingDouble(Entrance.Path::getHottness).reversed());
+        for (Entrance.Path path : pathEntries) {
+            if (path.getCarsUsingThisPath().isEmpty()){
+                continue;
+            }
+
+            boolean intersectionFound = false;
+            Point.Line pathLine = path.toLine();
+            for (Point.Line line : lines) {
+                if (MathUtils.doLinesIntersect(line, pathLine)) {
+                    intersectionFound = true;
+                    break;
+                }
+            }
+            if (!intersectionFound) {
+                path.setGreenLight(true);
+                lines.add(pathLine);
+            }
+        }
+
+
         //System.out.println();
 
         intersectionJPanelHandler.repaint();
@@ -133,10 +161,10 @@ public class Intersection extends Thread {
         entrances.clear();
         for (int i = 1; i < vertices.size(); i++) {
             System.out.println("    Creating entrance #" + (i - 1));
-            entrances.add(new Entrance(vertices.get(i - 1), vertices.get(i), i - 1, vertices.size(), mainApplicationWindow, this));
+            entrances.add(new Entrance(vertices.get(i - 1), vertices.get(i), i - 1, vertices.size(), this));
         }
         System.out.println("    Creating entrance #" + (vertices.size() - 1));
-        entrances.add(new Entrance(vertices.getLast(), vertices.getFirst(), vertices.size() - 1, vertices.size(), mainApplicationWindow, this));
+        entrances.add(new Entrance(vertices.getLast(), vertices.getFirst(), vertices.size() - 1, vertices.size(), this));
 
 
         buildEntrances();
@@ -160,11 +188,11 @@ public class Intersection extends Thread {
         return mainApplicationWindow;
     }
 
-    static class IntersectionHandler extends JPanel {
+    public static class IntersectionHandler extends JPanel {
         static final double intersectionSizeRatio = 0.85;
-        private Intersection intersection;
+        private final Intersection intersection;
 
-        IntersectionHandler(int entrancesNumber, MainApplicationWindow mainApplicationWindow, Intersection intersection) {
+        IntersectionHandler(MainApplicationWindow mainApplicationWindow, Intersection intersection) {
             this.intersection = intersection;
             this.setBackground(MyColors.MainForeground);
             this.setBounds(0, 0, mainApplicationWindow.getWindowSize(), mainApplicationWindow.getWindowSize());
@@ -234,25 +262,25 @@ public class Intersection extends Thread {
 
         private String getTotalCarsAverageWaitingTimeFormatted() {
             double totalWaitingTime = 0;
-            for (Car car : Main.getCarsObjectsList()){
+            for (Car car : Main.getCarsObjectsList()) {
                 totalWaitingTime += car.waitingTime;
             }
             double average = totalWaitingTime / (double) Main.getCarsObjectsList().size();
             intersection.allCurrentAverageWaitingTimes.add(average);
 
             double sumOfAverages = 0;
-            for (Double number : intersection.allCurrentAverageWaitingTimes){
+            for (Double number : intersection.allCurrentAverageWaitingTimes) {
                 sumOfAverages += number;
             }
             double averageAverage = sumOfAverages / intersection.allCurrentAverageWaitingTimes.size();
-            return String.format("%.2f", (averageAverage)/1000);
+            return String.format("%.2f", (averageAverage) / 1000);
         }
 
         private String getFormattedExitRate() {
-            double carsExited = (double) intersection.carsThatExitedIntersection;
+            double carsExited = intersection.carsThatExitedIntersection;
             double elapsedTime = (double) (System.currentTimeMillis() - intersection.startTime) / 1000;
             double exitRate = carsExited / elapsedTime;
-            return String.format("%.2f", exitRate*60);
+            return String.format("%.2f", exitRate * 60);
         }
 
         private void debugPaths(Graphics2D graphics2D) {
@@ -282,15 +310,23 @@ public class Intersection extends Thread {
                         graphics2D.fillOval(point.getXFloored(), point.getYFloored(), 2, 2);
                     }
 
-                    if (lane.isGreenLight()) {
+                    /*if (lane.isGreenLight()) {
                         graphics2D.setColor(Color.GREEN);
                     } else {
                         graphics2D.setColor(Color.RED);
-                    }
+                    }*/
 
                     for (int k = 0; k < lane.getPaths().size(); k++) {
                         Entrance.Path path = lane.getPaths().get(k);
                         for (int l = 1; l < path.getIntersectionPath().size(); l++) {
+
+                            if (path.isGreenLight()) {
+                                graphics2D.setColor(Color.GREEN);
+                            } else {
+                                graphics2D.setColor(Color.RED);
+                            }
+
+
                             Point prevoiusPoint = path.getIntersectionPath().get(l - 1);
                             Point point = path.getIntersectionPath().get(l);
                             graphics2D.drawLine(point.getXFloored(), point.getYFloored(), prevoiusPoint.getXFloored(), prevoiusPoint.getYFloored());
@@ -312,8 +348,7 @@ public class Intersection extends Thread {
                 graphics2D.setColor(Color.black);
             }
 
-            if (Main.getCarsObjectsList() != null && !Main.getCarsObjectsList().isEmpty())
-            {
+            if (Main.getCarsObjectsList() != null && !Main.getCarsObjectsList().isEmpty()) {
                 for (Car car : Main.getCarsObjectsList()) {
                     graphics2D.setColor(MyColors.getUniqueColor(car.getCarId()));
                     graphics2D.fillRect(car.getPosition().getXFloored() - (carWidth / 2), car.getPosition().getYFloored() - (carHeight / 2), carWidth, carHeight);

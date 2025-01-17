@@ -8,8 +8,6 @@ public class Entrance {
     private final Point end;
     private final int id;
     private final int numberOfEntrances;
-    private MainApplicationWindow mainApplicationWindow;
-    private EntranceHandler handler;
     private ArrayList<Lane> lanes;
     private double degreeFacingMiddle;
     private ArrayList<Point> entrancePoints;
@@ -18,12 +16,11 @@ public class Entrance {
     private final ArrayList<ArrayList<Point>> exitPathsPoints = new ArrayList<>();
     private final ArrayList<ArrayList<Integer>> exitPathsPointsOccupied = new ArrayList<>();
 
-    Entrance(Point start, Point end, int id, int numberOfEntrances, MainApplicationWindow mainApplicationWindow, Intersection intersection) {
+    Entrance(Point start, Point end, int id, int numberOfEntrances, Intersection intersection) {
         this.start = start;
         this.end = end;
         this.id = id;
         this.numberOfEntrances = numberOfEntrances;
-        this.mainApplicationWindow = mainApplicationWindow;
         this.intersection = intersection;
 
         checkValidity();
@@ -35,11 +32,14 @@ public class Entrance {
 
         //System.out.println("Entrance: " + start + " End: " + end);
         //System.out.println(degreeFacingMiddle);
-        this.handler = new EntranceHandler(mainApplicationWindow);
     }
 
     public static void setRoadLanes(int roadLanes) {
         ROAD_LANES = roadLanes;
+    }
+
+    public ArrayList<Point> getExitPoints() {
+        return exitPoints;
     }
 
     public int getId() {
@@ -51,11 +51,11 @@ public class Entrance {
         exitPathsPoints.clear();
         exitPathsPointsOccupied.clear();
 
-        for (int i = 0; i < exitPoints.size(); i++) {
+        for (Point exitPoint : exitPoints) {
             ArrayList<Point> temporaryExitPath = new ArrayList<>();
             double SCALE = 2;
-            Point step = new Point(Math.cos(this.degreeFacingMiddle + Math.PI), (-1)*Math.sin(this.degreeFacingMiddle + Math.PI));
-            Point currentPoint = new Point(this.exitPoints.get(i));
+            Point step = new Point(Math.cos(this.degreeFacingMiddle + Math.PI), (-1) * Math.sin(this.degreeFacingMiddle + Math.PI));
+            Point currentPoint = new Point(exitPoint);
             while (currentPoint.getX() <= this.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getY() <= this.intersection.getMainApplicationWindow().getWindowSize() && currentPoint.getX() >= 0 && currentPoint.getY() >= 0) {
                 temporaryExitPath.add(new Point(currentPoint));
                 currentPoint = new Point(currentPoint.getX() + step.getX() * SCALE, currentPoint.getY() + step.getY() * SCALE);
@@ -145,14 +145,10 @@ public class Entrance {
     }
 
     public void buildLanes() {
-        for (int i = 0; i < lanes.size(); i++) {
-            System.out.println("        Building lane#" + lanes.get(i).id);
-            lanes.get(i).calculatePaths();
+        for (Lane lane : lanes) {
+            System.out.println("        Building lane#" + lane.id);
+            lane.calculatePaths();
         }
-    }
-
-    void drawCurveOnParrent() {
-
     }
 
     public ArrayList<Lane> getLanes() {
@@ -176,13 +172,12 @@ public class Entrance {
         private final int numberOfPaths;
         private final double directionAngle;
         private final Entrance entrance;
-        private ArrayList<Car> waitingCars = new ArrayList<Car>();
+        private final ArrayList<Car> waitingCars = new ArrayList<Car>();
         private final ArrayList<Path> paths = new ArrayList<>();
-        private volatile ArrayList<Point> queuePoints = new ArrayList<>();
-        private volatile ArrayList<Integer> queuePointsOccupied = new ArrayList<>();
+        private final ArrayList<Point> queuePoints = new ArrayList<>();
+        private final ArrayList<Integer> queuePointsOccupied = new ArrayList<>();
         private boolean isGreenLight = false;
-        private double hottness = 0;
-        private ArrayList<Integer> exitIDs;
+        private final ArrayList<Integer> exitIDs;
 
         public Lane(int id, Point position, int numberOfPaths, double directionAngle, Entrance entrance, ArrayList<Integer> exitIDs) {
             this.id = id;
@@ -197,6 +192,10 @@ public class Entrance {
 
         public ArrayList<Integer> getQueuePointsOccupied() {
             return queuePointsOccupied;
+        }
+
+        public ArrayList<Car> getWaitingCars() {
+            return waitingCars;
         }
 
         private void buildQueuePoints() {
@@ -216,7 +215,11 @@ public class Entrance {
         }
 
         public double getHottness() {
-            return hottness;
+            double sum = 0;
+            for (Car car : waitingCars) {
+                sum += car.waitingTime;
+            }
+            return sum;
         }
 
         public void calculatePaths() {
@@ -232,7 +235,13 @@ public class Entrance {
 
                 System.out.println("            Bulding path #" + this.getId() + ", from: " + this.entrance.id + ", to: " + connectedToEntranceID + ", exit id: " + (ROAD_LANES - 1 - this.id));
                 ArrayList<Point> curvePoints = CurveGenerator.generateCurveAndPoints(this.position.getX(), this.position.getY(), this.directionAngle, endPoint.getX(), endPoint.getY(), endEntrance.degreeFacingMiddle, SAMPLING_RATE, offset);
-                this.paths.add(new Path(curvePoints, entrance, this, endEntrance, (ROAD_LANES - 1 - this.id)));
+                this.paths.add(new Path(curvePoints, this, endEntrance, (ROAD_LANES - 1 - this.id)));
+            }
+        }
+
+        public void setGreenLightForAllPaths(boolean lightForAllPaths) {
+            for (Path path : paths) {
+                path.setGreenLight(lightForAllPaths);
             }
         }
 
@@ -254,14 +263,6 @@ public class Entrance {
 
         public int getId() {
             return id;
-        }
-        public void calculateLaneHotnessIndex(){
-            double sum = 0;
-            for (Car car : waitingCars) {
-                sum += car.waitingTime;
-            }
-            this.hottness = sum;
-            //System.out.println(this.hottness);
         }
         public boolean isGreenLight() {
             return isGreenLight;
@@ -285,24 +286,22 @@ public class Entrance {
     }
 
     public static class Path {
-        private ArrayList<Point> intersectionPath = new ArrayList<>();
-        private ArrayList<Integer> intersectionPathOccupied = new ArrayList<>();
-        private final Entrance startEntrance;
+        private final ArrayList<Point> intersectionPath;
         private final Entrance endEntrance;
         private final Lane startLane;
         private final int endExitID;
+        private final ArrayList<Car> carsUsingThisPath = new ArrayList<>();
+        private boolean isGreenLight = false;
 
-        public Path(ArrayList<Point> intersectionPath, Entrance startEntrance, Lane startLane, Entrance endEntrance, int endExitID) {
+        public Path(ArrayList<Point> intersectionPath, Lane startLane, Entrance endEntrance, int endExitID) {
             this.intersectionPath = intersectionPath;
-            this.intersectionPathOccupied = new ArrayList<>(Collections.nCopies(intersectionPath.size(), -1));
-            this.startEntrance = startEntrance;
             this.endEntrance = endEntrance;
             this.endExitID = endExitID;
             this.startLane = startLane;
         }
 
-        public ArrayList<Integer> getIntersectionPathOccupied() {
-            return intersectionPathOccupied;
+        public ArrayList<Car> getCarsUsingThisPath() {
+            return carsUsingThisPath;
         }
 
         public Lane getStartLane() {
@@ -321,10 +320,35 @@ public class Entrance {
             return endExitID;
         }
 
-        public Entrance getStartEntrance() {
-            return startEntrance;
+        public void addCarToPath(Car car) {
+            this.carsUsingThisPath.add(car);
+        }
+
+        public Point.Line toLine(){
+            return new Point.Line(this.getStartLane().getPosition(), this.getEndEntrance().getExitPoints().get(this.getEndExitID()));
+        }
+
+        public void removeCarFromPath(Car car) {
+            synchronized (carsUsingThisPath)
+            {
+                this.carsUsingThisPath.remove(car);
+            }
+        }
+
+        public double getHottness(){
+            double sum = 0;
+            for (Car car : carsUsingThisPath){
+                sum += car.waitingTime;
+            }
+            return sum;
+        }
+
+        public boolean isGreenLight() {
+            return isGreenLight;
+        }
+
+        public void setGreenLight(boolean greenLight) {
+            isGreenLight = greenLight;
         }
     }
-
-
 }

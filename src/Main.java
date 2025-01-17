@@ -3,13 +3,8 @@ import java.util.ArrayList;
 public class Main {
     private volatile static Intersection intersection;
     private volatile static JObjectsHandler jObjectsHandler;
-    private volatile static ArrayList<Car> carsObjectsList = new ArrayList<>();
+    private static final ArrayList<Car> carsObjectsList = new ArrayList<>();
     private static int numberOfCars;
-    private static volatile boolean safeDelete = false;
-
-    public static JObjectsHandler getjObjectsHandler() {
-        return jObjectsHandler;
-    }
 
     public static void main(String[] args) {
         jObjectsHandler = new JObjectsHandler();
@@ -43,39 +38,4 @@ public class Main {
         return carsObjectsList;
     }
 
-    public static void deleteCar(Car car) {
-        car.stopLoop();
-        while (safeDelete){
-            boolean found = safeDelete;
-            System.out.println("Car #" + car.getCarId() + " waiting.");
-            if (!safeDelete){
-                break;
-            }
-            int i = 1/2;
-        }
-        safeDelete = true;
-
-        int indexInCarsObjectsList = findIndexInCarsObjectsList(car);
-        if (indexInCarsObjectsList == -1) {
-            throw new IllegalStateException("Car did not found index of itself");
-        }
-
-        if (carsObjectsList.get(indexInCarsObjectsList).getCarId() != car.getCarId()){
-            throw new IllegalStateException("issue 2");
-        }
-        carsObjectsList.remove(indexInCarsObjectsList);
-
-        safeDelete = false;
-        car.interrupt();
-    }
-
-    private static int findIndexInCarsObjectsList(Car car) {
-        for (int i = 0; i < carsObjectsList.size(); i++) {
-            if (carsObjectsList.get(i) == car) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
 }

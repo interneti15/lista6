@@ -24,13 +24,4 @@ public class MainApplicationWindow extends JFrame {
         return new Point((double) windowSize / 2, (double) windowSize / 2);
     }
 
-    /*@Override
-    public int getHeight() {
-        throw (new UnsupportedOperationException("Use getWindowSize() instead."));
-    }
-
-    @Override
-    public int getWidth() {
-        throw (new UnsupportedOperationException("Use getWindowSize() instead."));
-    }*/
 }

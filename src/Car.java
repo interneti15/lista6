@@ -10,10 +10,10 @@ public class Car extends Thread {
     Intersection intersection;
     MainApplicationWindow mainApplicationWindow;
     private STATUS status = STATUS.ARRIVING;
-    private Entrance startingEntrance;
+    //private Entrance startingEntrance;
     private Entrance.Lane choosenLane;
     private Entrance.Path choosenPath;
-    private boolean isAlive = true;
+    private final boolean isAlive = true;
 
     Car(Intersection intersection, MainApplicationWindow mainApplicationWindow) {
         this.id = number;
@@ -38,10 +38,6 @@ public class Car extends Thread {
         }
     }
 
-    public void stopLoop() {
-        isAlive = false;
-    }
-
     public int getCarId() {
         return id;
     }
@@ -60,17 +56,12 @@ public class Car extends Thread {
         }
         intersectionPointsOccupied.set(0,this.id);
 
-        //boolean didMoveInPreviousIteration = false;
         long startedWaitingOnTime = System.currentTimeMillis();
-        //double waitingTimeCopy = waitingTime;
 
         for (int i = 0; i < intersectionPoints.size(); i++) {
             boolean available = checkForSpaceAvailability(intersectionPointsOccupied, i);
 
             if (available) {
-/*                if (!didMoveInPreviousIteration){
-                    waitingTimeCopy = waitingTime;
-                }*/
                 Point point = intersectionPoints.get(i);
                 position.setX(point.getX());
                 position.setY(point.getY());
@@ -78,35 +69,16 @@ public class Car extends Thread {
                 if (i - 6 >= 0){
                     intersectionPointsOccupied.set(i - 6, -1);
                 }
-                //didMoveInPreviousIteration = true;
             } else {
-                //waitingTime += 1;
-
-                /*if (didMoveInPreviousIteration){
-                    startedWaitingOnTime = System.currentTimeMillis();
-                }
-                waitingTime = waitingTimeCopy + (System.currentTimeMillis() - startedWaitingOnTime);
-
-
-                didMoveInPreviousIteration = false;*/
                 waitingTime += System.currentTimeMillis() - startedWaitingOnTime;
                 startedWaitingOnTime = System.currentTimeMillis(); // Reset only after incrementing
 
                 i--;
             }
 
-            /*for (Integer integer : intersectionPointsOccupied){
-                System.out.print(String.valueOf(integer+1));
-            }
-            System.out.println();*/
-
             sleepWithRepaint(CAR_MOVE_DELAY);
         }
 
-        /*for (Integer integer : intersectionPointsOccupied){
-            System.out.print(String.valueOf(integer+1));
-        }
-        System.out.println();*/
         status = STATUS.WAITING;
     }
 
@@ -133,7 +105,7 @@ public class Car extends Thread {
         long startedWaitingOnTime = System.currentTimeMillis();
         while (true)
         {
-            if (choosenLane.isGreenLight()) {
+            if (choosenLane.isGreenLight() || choosenPath.isGreenLight()) {
                 status = STATUS.MOVING;
                 for (int i = intersectionPointsOccupied.size() - 6; i < intersectionPointsOccupied.size(); i++) {
                     intersectionPointsOccupied.set(i, -1);
@@ -150,6 +122,7 @@ public class Car extends Thread {
     private void handleCarMovingState() {
         ArrayList<Point> intersectionPoints = choosenPath.getIntersectionPath();
         choosenPath.getStartLane().removeCarFromQueue(this);
+        choosenPath.removeCarFromPath(this);
         waitingTime = 0;
 
         for (int i = 0; i < intersectionPoints.size() - 1; i++) {
@@ -178,17 +151,11 @@ public class Car extends Thread {
         this.regenerateID();
         status = null;
 
-        //Main.deleteCar(this);
-        //Main.addNewCar();
     }
 
     private void findNewPath() {
         int startingEntranceID = new Random().nextInt(intersection.getEntrances().size());
         int endEntranceID = (startingEntranceID + new Random().nextInt(intersection.getEntrances().size() - 1) + 1) % intersection.getEntrances().size();
-
-        //System.out.println("start: " + startingEntranceID + " end: " + endEntranceID);
-
-        startingEntrance = intersection.getEntrances().get(startingEntranceID);
 
         findCorrectPath(intersection, startingEntranceID, endEntranceID);
         //System.out.println("Car " + id + " at entrance: " + choosenPath.getStartEntrance().getId() + " in lane: " + choosenPath.getStartLane().getId() + " destination at: " + choosenPath.getEndEntrance().getId() + " exit number: " + choosenPath.getEndExitID());
@@ -207,13 +174,13 @@ public class Car extends Thread {
             for (Entrance.Path path : lane.getPaths()) {
                 if (path.getEndEntrance().getId() == endEntranceID) {
                     lane.addCarToQueue(this);
+                    path.addCarToPath(this);
                     this.choosenLane = lane;
                     this.choosenPath = path;
                     return;
                 }
             }
         }
-        //findCorrectPath(intersection, startingEntranceID, endEntranceID);
         throw new IllegalStateException("IllegalPath");
     }
 
