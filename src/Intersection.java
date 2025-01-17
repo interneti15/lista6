@@ -83,19 +83,10 @@ public class Intersection extends Thread {
             }
         }
 
-        /*for (Entrance.Lane lane : laneEntries) {
-            System.out.println("Before Sort: " + lane.getHottness());
-        }*/
-
         laneEntries.sort(Comparator.comparingDouble(Entrance.Lane::getHottness).reversed());
-
-        /*for (Entrance.Lane lane : laneEntries) {
-            System.out.println("After Sort: " + lane.getHottness());
-        }*/
 
         ArrayList<Point.Line> lines = new ArrayList<>();
         for (Entrance.Lane lane : laneEntries) {
-            //System.out.println("Lane at entrance #" + lane.getEntrance().getId() + " lane #" + lane.getId() + " hottness " + lane.getHottness());
             if (!MathUtils.doesLinesIntersectFromTwoArrays(lines, lane.pathsToLines())) {
                 lines.addAll(lane.pathsToLines());
                 lane.setGreenLight(true);
@@ -321,9 +312,12 @@ public class Intersection extends Thread {
                 graphics2D.setColor(Color.black);
             }
 
-            for (Car car : Main.getCarsObjectsList()) {
-                graphics2D.setColor(MyColors.getUniqueColor(car.getCarId()));
-                graphics2D.fillRect(car.getPosition().getXFloored() - (carWidth / 2), car.getPosition().getYFloored() - (carHeight / 2), carWidth, carHeight);
+            if (Main.getCarsObjectsList() != null && !Main.getCarsObjectsList().isEmpty())
+            {
+                for (Car car : Main.getCarsObjectsList()) {
+                    graphics2D.setColor(MyColors.getUniqueColor(car.getCarId()));
+                    graphics2D.fillRect(car.getPosition().getXFloored() - (carWidth / 2), car.getPosition().getYFloored() - (carHeight / 2), carWidth, carHeight);
+                }
             }
         }
     }

@@ -219,31 +219,6 @@ public class Entrance {
             return hottness;
         }
 
-        /**
-         * Use after all lines and entrances are initialized!!!
-         */
-        /*public void calculatePaths() {//TODO for entrance number = 5 and path per lane = 2, many paths coming from same entrance to same exit
-            for (int i = 0; i < numberOfPaths; i++) {
-                int connectedToEndID = (entrance.id + (ROAD_LANES - 1 - this.id) + 1 + i) % entrance.numberOfEntrances;
-                Entrance endEntrance = this.entrance.intersection.getEntrances().get(connectedToEndID);
-                Point endPoint = endEntrance.exitPoints.get(ROAD_LANES - 1 - this.id);
-                //Point endPoint = endEntrance.exitPoints.get(endEntrance.exitPoints.size() - 1 - this.id);
-                double distance = this.position.distanceTo(endPoint);
-                //double offset = Math.sqrt(distance) * (distance / 60) * ((-distance)/143 + (243d/71d));
-                double offset = distance * Math.sqrt(2) / (entrance.numberOfEntrances - 1);
-                offset = offset / 1.2;
-                //System.out.println(distance);
-                //int SAMPLING_RATE = 200;
-                double SAMPLING_RATIO = 70;
-                int SAMPLING_RATE = (int) (((SAMPLING_RATIO - 200) / (-365.0)) * distance + 200 - (450 * (SAMPLING_RATIO - 200) / -365.0));
-
-                System.out.println("            Bulding path #" + this.getId() + ", from: " + this.entrance.id + ", to: " + connectedToEndID + ", exit id: " + (ROAD_LANES - 1 - this.id));
-                ArrayList<Point> curvePoints = CurveGenerator.generateCurveAndPoints(this.position.getX(), this.position.getY(), this.directionAngle, endPoint.getX(), endPoint.getY(), endEntrance.degreeFacingMiddle, SAMPLING_RATE, offset);
-                this.paths.add(new Path(curvePoints, entrance, this, endEntrance, (ROAD_LANES - 1 - this.id)));
-            }
-            //System.out.println(this.entrance.id + " : " + this.id + " : " + connectedToEndID);
-        }*/
-
         public void calculatePaths() {
             for (int i = 0; i < numberOfPaths; i++) {
                 int connectedToEntranceID = exitIDs.get(i);
