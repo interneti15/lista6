@@ -15,7 +15,7 @@ public class Main {
         jObjectsHandler = new JObjectsHandler();
 
         for (int i = 0; i < numberOfCars; i++) {
-            addNewCar();
+            //addNewCar();
         }
 
         intersection.start();

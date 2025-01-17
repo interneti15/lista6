@@ -113,13 +113,27 @@ public class Entrance {
         this.lanes = new ArrayList<>(ROAD_LANES);
         int pathsPerLane = (this.numberOfEntrances - 1) / ROAD_LANES;
         int extraPaths = (this.numberOfEntrances - 1) % ROAD_LANES;
-
+        int current = (this.id - 1 + this.numberOfEntrances) % this.numberOfEntrances;
         for (int i = 0; i < ROAD_LANES; i++) {
             int lanePaths = pathsPerLane + (i < extraPaths ? 1 : 0);
-            this.lanes.add(new Lane(i, entrancePoints.get(i), lanePaths, degreeFacingMiddle, this));
+
+            ArrayList<Integer> exitIDs = calculateExitIDs(current, lanePaths, this.numberOfEntrances);
+            current = (exitIDs.getLast() - 1 + this.numberOfEntrances) % this.numberOfEntrances;
+            this.lanes.add(new Lane(i, entrancePoints.get(i), lanePaths, degreeFacingMiddle, this, exitIDs));
             //System.out.println("Debug - i: " + i + ", entrancePoint: " + (entrancePoints != null && entrancePoints.size() > i ? entrancePoints.get(i) : "Invalid index") + ", lanePaths: " + lanePaths + ", degreeFacingMiddle: " + degreeFacingMiddle);
             //System.out.println("Debug - i: " + i + ", entrancePoint: " + (exitPoints != null && exitPoints.size() > i ? exitPoints.get(i) : "Invalid index"));
         }
+    }
+    private static ArrayList<Integer> calculateExitIDs(int current, int numberOfUsedPaths, int totalExits){
+        ArrayList<Integer> toReturn = new ArrayList<>();
+
+        for (int i = 0; i < numberOfUsedPaths; i++) {
+
+            toReturn.add(current);
+            current = (current - 1 + totalExits) % totalExits;
+        }
+
+        return toReturn;
     }
 
     public Point getStart() {
@@ -168,14 +182,15 @@ public class Entrance {
         private volatile ArrayList<Integer> queuePointsOccupied = new ArrayList<>();
         private boolean isGreenLight = false;
         private double hottness = 0;
+        private ArrayList<Integer> exitIDs;
 
-        public Lane(int id, Point position, int numberOfPaths, double directionAngle, Entrance entrance) {
+        public Lane(int id, Point position, int numberOfPaths, double directionAngle, Entrance entrance, ArrayList<Integer> exitIDs) {
             this.id = id;
             this.position = position;
             this.numberOfPaths = numberOfPaths;
             this.directionAngle = directionAngle;
             this.entrance = entrance;
-
+            this.exitIDs = exitIDs;
             buildQueuePoints();
             System.out.println("1");
         }
@@ -205,9 +220,9 @@ public class Entrance {
         }
 
         /**
-         * Use after all paths and entrances are initialized!!!
+         * Use after all lines and entrances are initialized!!!
          */
-        public void calculatePaths() {
+        /*public void calculatePaths() {//TODO for entrance number = 5 and path per lane = 2, many paths coming from same entrance to same exit
             for (int i = 0; i < numberOfPaths; i++) {
                 int connectedToEndID = (entrance.id + (ROAD_LANES - 1 - this.id) + 1 + i) % entrance.numberOfEntrances;
                 Entrance endEntrance = this.entrance.intersection.getEntrances().get(connectedToEndID);
@@ -227,6 +242,23 @@ public class Entrance {
                 this.paths.add(new Path(curvePoints, entrance, this, endEntrance, (ROAD_LANES - 1 - this.id)));
             }
             //System.out.println(this.entrance.id + " : " + this.id + " : " + connectedToEndID);
+        }*/
+
+        public void calculatePaths() {
+            for (int i = 0; i < numberOfPaths; i++) {
+                int connectedToEntranceID = exitIDs.get(i);
+                Entrance endEntrance = this.entrance.intersection.getEntrances().get(connectedToEntranceID);
+                Point endPoint = endEntrance.exitPoints.get(ROAD_LANES - 1 - this.id);
+
+                double distance = this.position.distanceTo(endPoint);
+                double offset = (distance * Math.sqrt(2) / (entrance.numberOfEntrances - 1)) / 1.2;
+                double SAMPLING_RATIO = 70;
+                int SAMPLING_RATE = (int) (((SAMPLING_RATIO - 200) / (-365.0)) * distance + 200 - (450 * (SAMPLING_RATIO - 200) / -365.0));
+
+                System.out.println("            Bulding path #" + this.getId() + ", from: " + this.entrance.id + ", to: " + connectedToEntranceID + ", exit id: " + (ROAD_LANES - 1 - this.id));
+                ArrayList<Point> curvePoints = CurveGenerator.generateCurveAndPoints(this.position.getX(), this.position.getY(), this.directionAngle, endPoint.getX(), endPoint.getY(), endEntrance.degreeFacingMiddle, SAMPLING_RATE, offset);
+                this.paths.add(new Path(curvePoints, entrance, this, endEntrance, (ROAD_LANES - 1 - this.id)));
+            }
         }
 
         public ArrayList<Path> getPaths() {
