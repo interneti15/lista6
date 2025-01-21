@@ -82,14 +82,14 @@ public class Car extends Thread {
         status = STATUS.WAITING;
     }
 
-    private void occupySpace(ArrayList<Integer> intersectionPointsOccupied, int index) {
+    private synchronized void occupySpace(ArrayList<Integer> intersectionPointsOccupied, int index) {
         for (int i = index - 5; i < intersectionPointsOccupied.size() && i < index + 5; i++) {
             if (i < 0){
                 continue;
             }
-            synchronized (intersectionPointsOccupied) {
-                intersectionPointsOccupied.set(i, this.id);
-            }
+
+            intersectionPointsOccupied.set(i, this.id);
+
         }
     }
 

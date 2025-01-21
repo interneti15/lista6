@@ -249,11 +249,11 @@ public class Entrance {
             return paths;
         }
 
-        public void addCarToQueue(Car car) {
+        public synchronized void addCarToQueue(Car car) {
             this.waitingCars.add(car);
         }
 
-        public void removeCarFromQueue(Car car) {
+        public synchronized void removeCarFromQueue(Car car) {
             this.waitingCars.remove(car);
         }
 
@@ -320,7 +320,7 @@ public class Entrance {
             return endExitID;
         }
 
-        public void addCarToPath(Car car) {
+        public synchronized void addCarToPath(Car car) {
             this.carsUsingThisPath.add(car);
         }
 
@@ -328,11 +328,10 @@ public class Entrance {
             return new Point.Line(this.getStartLane().getPosition(), this.getEndEntrance().getExitPoints().get(this.getEndExitID()));
         }
 
-        public void removeCarFromPath(Car car) {
-            synchronized (carsUsingThisPath)
-            {
-                this.carsUsingThisPath.remove(car);
-            }
+        public synchronized void removeCarFromPath(Car car) {
+
+            this.carsUsingThisPath.remove(car);
+
         }
 
         public double getHottness(){
