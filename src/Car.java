@@ -87,7 +87,9 @@ public class Car extends Thread {
             if (i < 0){
                 continue;
             }
-            intersectionPointsOccupied.set(i, this.id);
+            synchronized (intersectionPointsOccupied) {
+                intersectionPointsOccupied.set(i, this.id);
+            }
         }
     }
 
