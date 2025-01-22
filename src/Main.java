@@ -9,11 +9,11 @@ public class Main {
     public static void main(String[] args) {
         jObjectsHandler = new JObjectsHandler();
 
+        intersection.start();
+
         for (int i = 0; i < numberOfCars; i++) {
             addNewCar();
         }
-
-        intersection.start();
     }
 
     public static void setNumberOfCars(int numberOfCars) {
